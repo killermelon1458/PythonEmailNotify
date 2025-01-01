@@ -19,7 +19,7 @@ class EmailSender:
         self.password = password
         self.default_recipient = default_recipient
 
-    def send_email(self, subject, body, recipient=None, html=False):
+    def sendEmail(self, subject, body, recipient=None, html=False):
         """
         Send an email with the specified subject and body.
         :param subject: Subject of the email.
@@ -49,7 +49,7 @@ class EmailSender:
         except Exception as e:
             print(f"Failed to send email: {e}")
 
-    def send_exception(self, exception, recipient=None):
+    def sendException(self, exception, recipient=None):
         """
         Send an email with exception details.
         :param exception: The exception object.
@@ -63,4 +63,4 @@ class EmailSender:
         <p><strong>Traceback:</strong></p>
         <pre>{traceback.format_exc()}</pre>
         """
-        self.send_email(subject, body, recipient, html=True)
+        self.sendEmail(subject, body, recipient, html=True)
