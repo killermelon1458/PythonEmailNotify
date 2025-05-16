@@ -1,3 +1,4 @@
+#emailTest.py
 from pythonEmailNotify import *
 import os
 #This is a test script to test email notifications
