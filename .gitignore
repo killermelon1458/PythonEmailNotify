@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.log
+
+# Dev sandboxes (keep claude_tests tracked)
+gpt_tests/
