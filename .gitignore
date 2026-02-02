@@ -4,3 +4,6 @@ __pycache__/
 
 # Dev sandboxes (keep claude_tests tracked)
 gpt_tests/
+__pycache__/
+*.pyc
+python_email_notify.egg-info/
