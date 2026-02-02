@@ -1,8 +1,10 @@
 # pythonEmailNotify
 
-A hardened, dependency-free Python utility for sending **reliable, non-blocking email notifications** from scripts, services, and infrastructure tooling.
+A hardened, dependency-free Python library for sending **reliable, non-blocking email notifications**
+from scripts, services, and infrastructure tooling.
 
-This library is designed for **production environments** where failures must be **loud**, logging must **never hang**, and email delivery attempts must be **predictable and observable**.
+This library is designed for **production environments** where failures must be **loud**,
+logging must **never hang**, and email delivery attempts must be **predictable and observable**.
 
 ---
 
@@ -12,13 +14,13 @@ This library is designed for **production environments** where failures must be 
 
   * All failures are printed to `stderr` with timestamps
   * No silent errors
-  * Clear diagnostics for misconfiguration and runtime failures
+  * Explicit diagnostics for misconfiguration and runtime failures
 
 * **Non-blocking logging**
 
-  * Logging is optional
+  * Logging is optional and opt-in
   * Logging cannot block or hang the calling process
-  * Filesystem or disk failures never stop execution
+  * Filesystem failures never stop execution
 
 * **No retries, no hidden state**
 
@@ -42,7 +44,7 @@ This library is designed for **production environments** where failures must be 
 
 ## Intended Use Cases
 
-* Systemd `OnFailure=` hooks
+* systemd `OnFailure=` hooks
 * Cron job failure notifications
 * Watchdog scripts
 * Backup and retention jobs
@@ -72,21 +74,23 @@ Those concerns belong in higher-level systems.
 
 ## Installation
 
-This project is intentionally distributed as a **single Python file**.
+This project is distributed as a **proper Python package** and is typically installed
+in **editable mode** for infrastructure use.
 
 ```bash
-# Copy directly into your project
-cp pythonEmailNotify.py /path/to/your/project/
+git clone https://github.com/killermelon1458/PythonEmailNotify.git
+cd PythonEmailNotify
+pip install --user -e . --break-system-packages
 ```
 
-Or vendor it into your repository.
+Editable installs ensure that updates take effect immediately after `git pull`.
 
 ---
 
 ## Basic Usage
 
 ```python
-from pythonEmailNotify import EmailSender
+from python_email_notify import EmailSender
 
 sender = EmailSender(
     smtp_server="smtp.gmail.com",
@@ -102,7 +106,7 @@ sender.sendEmail(
 )
 ```
 
-Return value:
+### Return value
 
 * `True` → email send attempt succeeded
 * `False` → failure occurred (details printed to stderr)
@@ -111,28 +115,31 @@ Return value:
 
 ## Environment Variable Pattern (Recommended)
 
-Many users inject credentials via environment variables:
+Credentials and configuration are commonly injected via environment variables:
 
 ```bash
-EMAIL_ADDRESS=sender@example.com
-EMAIL_PASSWORD=app_password
-MAIN_EMAIL_ADDRESS=alerts@example.com
+OBTUSE_SMTP_SERVER=smtp.gmail.com
+OBTUSE_SMTP_PORT=587
+OBTUSE_EMAIL_USERNAME=sender@example.com
+OBTUSE_EMAIL_PASSWORD=app_password
+OBTUSE_EMAIL_DEFAULT_RECIPIENT=alerts@example.com
 ```
 
 ```python
 import os
-from pythonEmailNotify import EmailSender
+from python_email_notify import EmailSender
 
 sender = EmailSender(
-    smtp_server="smtp.gmail.com",
-    port=587,
-    login=os.getenv("EMAIL_ADDRESS"),
-    password=os.getenv("EMAIL_PASSWORD"),
-    default_recipient=os.getenv("MAIN_EMAIL_ADDRESS"),
+    smtp_server=os.getenv("OBTUSE_SMTP_SERVER"),
+    port=int(os.getenv("OBTUSE_SMTP_PORT")),
+    login=os.getenv("OBTUSE_EMAIL_USERNAME"),
+    password=os.getenv("OBTUSE_EMAIL_PASSWORD"),
+    default_recipient=os.getenv("OBTUSE_EMAIL_DEFAULT_RECIPIENT"),
 )
 ```
 
-If variables are missing or invalid, the library prints **explicit diagnostics**.
+If variables are missing or invalid, the library prints **explicit diagnostics**
+and fails sends loudly.
 
 ---
 
@@ -148,42 +155,64 @@ except Exception as e:
 ```
 
 * Captures the actual exception traceback
-* Works even when called outside the original `except` block
+* Works even outside the original `except` context
 * Does not crash if email sending fails
 
 ---
 
-## Configuration Options
+## Runtime Configuration (Environment-Driven)
 
-### Logging
+### Enable / Disable Logging
 
-```python
-ENABLE_LOGGING = False  # default
+```bash
+PYTHON_EMAIL_NOTIFY_ENABLE_LOGGING=1   # default
+PYTHON_EMAIL_NOTIFY_ENABLE_LOGGING=0   # disable
 ```
 
-When enabled:
+Logging is:
 
-* Logs are written to daily rotating files
-* Logging is asynchronous and non-blocking
-* Logging failures are printed but never fatal
-
-### Strict Validation
-
-```python
-STRICT_CONFIG_VALIDATION = False  # default
-```
-
-* `False` (default): invalid configuration prints diagnostics and fails sends loudly
-* `True`: invalid configuration raises `ValueError` at initialization
-
-Use strict mode when misconfiguration should halt execution immediately.
+* Asynchronous
+* Non-blocking
+* Never fatal
 
 ---
 
-## Logging Behavior (Guarantees)
+### Log Directory (Opt-In)
+
+```bash
+PYTHON_EMAIL_NOTIFY_LOG_DIR=/var/log/pythonEmailNotify
+```
+
+If unset or empty:
+
+* **No log files are written**
+* All diagnostics still go to `stderr`
+
+The library never writes logs by default.
+
+---
+
+### Strict Configuration Validation
+
+```bash
+PYTHON_EMAIL_NOTIFY_STRICT_CONFIG=1
+```
+
+* `0` (default): invalid config prints diagnostics and fails sends loudly
+* `1`: invalid config raises `ValueError` at initialization
+
+Strict mode is intended for:
+
+* CI
+* Tests
+* Environments where misconfiguration should halt execution immediately
+
+---
+
+## Logging Guarantees
 
 * Logging cannot hang the main thread
-* Filesystem issues do not crash the program
+* Filesystem failures do not crash the program
 * Queue overflow drops logs rather than blocking
 * Daily log files rotate automatically
 
@@ -192,54 +221,28 @@ This makes the library safe for:
 * Network mounts
 * Degraded disks
 * Read-only filesystems
-* Headless environments
-
----
-
-## Testing
-
-This repository includes:
-
-* **Unit tests** (deterministic, mock-based)
-* **Integration tests** (real SMTP, opt-in)
-* **Smoke tests** (environment validation + real send)
-* **Stress tests** (manual, non-CI)
-
-### Run unit tests
-
-```bash
-python -m unittest -v
-```
-
-### Run integration test (explicit opt-in)
-
-```bash
-export PYTHON_EMAIL_NOTIFY_RUN_INTEGRATION=1
-python -m unittest -v
-```
-
-### Smoke test
-
-```bash
-python smoke_test.py
-```
+* systemd services
+* Cron jobs
 
 ---
 
 ## Repository Layout
 
 ```
-pythonEmailNotify/
-├─ pythonEmailNotify.py     # Canonical production library
+PythonEmailNotify/
+├─ python_email_notify/
+│  ├─ __init__.py
+│  └─ pythonEmailNotify.py   # Canonical implementation
 ├─ README.md
-├─ .gitignore
-├─ claude_tests/            # Portable validation & integration tests
-└─ old/                     # Archived legacy versions
+├─ pyproject.toml
+├─ LICENSE
+├─ claude_tests/             # Portable validation & integration tests
+└─ old/                      # Archived legacy versions
 ```
 
-* `pythonEmailNotify.py` at root is authoritative
-* `old/` preserves historical versions for reference
-* `claude_tests/` is intentionally tracked for cross-machine validation
+* `python_email_notify/pythonEmailNotify.py` is the **only source of truth**
+* Root-level scripts are no longer used
+* Package installs are reproducible and editable
 
 ---
 
@@ -275,3 +278,4 @@ Predictable behavior under failure is the primary design goal.
 If something goes wrong, you will know immediately — and your program will keep running.
 
 That is the point.
+

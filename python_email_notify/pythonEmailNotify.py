@@ -14,15 +14,21 @@ from email.mime.multipart import MIMEMultipart
 # CONFIGURATION
 # =========================
 
-ENABLE_LOGGING = True
+# ENABLE_LOGGING = True
+
+ENABLE_LOGGING = os.getenv("PYTHON_EMAIL_NOTIFY_ENABLE_LOGGING", "1") == "1"
 
 # If True: invalid init config raises ValueError (stricter, potentially breaking).
 # If False (default): print loud diagnostics, mark sender invalid, and fail sends loudly.
-STRICT_CONFIG_VALIDATION = False
-
+# STRICT_CONFIG_VALIDATION = False
+STRICT_CONFIG_VALIDATION = os.getenv("PYTHON_EMAIL_NOTIFY_STRICT_CONFIG", "0") == "1"
 DEFAULT_LOG_DIR = os.path.dirname(os.path.abspath(__file__))
-CUSTOM_LOG_DIR = ""  # empty = disabled
-LOG_DIR = CUSTOM_LOG_DIR or DEFAULT_LOG_DIR
+#CUSTOM_LOG_DIR = ""  # empty = disabled #this is the generalized setup not for a system package
+#LOG_DIR = CUSTOM_LOG_DIR or DEFAULT_LOG_DIR #^^^^^^
+
+CUSTOM_LOG_DIR = os.getenv("PYTHON_EMAIL_NOTIFY_LOG_DIR", "")
+LOG_DIR = CUSTOM_LOG_DIR
+
 
 SMTP_TIMEOUT_SECONDS = 10  # Hard timeout to prevent hangs
 
@@ -109,6 +115,9 @@ def _start_logging_once():
         _loud_print(f"FAILED to start log writer thread: {e}")
 
 def _safe_log(message: str):
+    if not LOG_DIR:
+       return
+
     # Absolutely must not hang the caller.
     global _log_drop_count, _log_drop_last_notice
 
