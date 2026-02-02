@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-email-notify"
+version = "1.0.0"
+description = "Reusable email notification helper"
+
+[tool.setuptools]
+packages = ["python_email_notify"]
+
